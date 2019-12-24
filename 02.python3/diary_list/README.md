@@ -6,9 +6,6 @@
 ## Purpose
 - I want to read a text file.  
 テキストファイルを読込みたい。  
-  
-- I want to operate on the loaded text file.  
-解析した画像ファイルをHTML上でCanvasタグを使用し再描画したい。
 
 ## Using
 1. Please do the following:  
