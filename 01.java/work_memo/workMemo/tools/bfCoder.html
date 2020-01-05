@@ -1,0 +1,287 @@
+<!doctype html>
+<html class="no-js" lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>BF_coder</title>
+    <meta name="description" content="Brainf*ck encode/decode" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  </head>
+  <body style="font-family: 'OCRB', 'Meiryo';">
+    
+    <div id="str_to_ascii">
+      <h2>BF Codec Tool</h2>
+      
+      <div id="messageArea"></div>
+      
+      <p>
+        <small>
+          使い方<br />
+          1. 変換言語から変換したい言語を選択します。<br />
+          2. 文字列テキストエリアに文字列を入力します。<br />
+          3. [Encode] ボタンを押下します。<br />
+          4. 文字列をもとにASCIIコードとBFコードが生成されます。<br />
+        </small>
+      </p>
+      <p>
+        <small>
+          &nbsp;&nbsp;2018/10/03_公開.<br />
+          &nbsp;&nbsp;2018/10/04_jQuery非依存にした. 変換処理少し修正.<br />
+        </small>
+      </p>
+      
+      <form id="rangForm" style="margin: 0.5em 0;">
+        <small>変換言語</small><br />
+        <label><input type="radio" name="lang" value="brainfuck" checked="checked" /> Brainf*ck </label>
+        <label><input type="radio" name="lang" value="commdic" /> コミュ障プログラミング言語 </label>
+      </form>
+      
+      <div style="margin: 0.5em 0;">
+        <button type="button" onclick="encodeLangBtn();">Encode</button>
+        <button type="button" onclick="inputClear();">Clear</button>
+      </div>
+      
+      <div>
+        <small>文字列: 半角英数字と一部の半角記号、半角スペースと改行が使用できます</small><br />
+        <textarea id="str" cols="50" rows="8" placeholder="String Words."></textarea>
+      </div>
+      
+      <div>
+        <small>ASCIIコード: 入力不要</small><br />
+        <textarea id="ascii" cols="50" rows="8" placeholder="ASCII Codes."></textarea>
+      </div>
+      
+      <div>
+        <small>BFコード: 入力不要</small><br />
+        <textarea id="bf_code" cols="50" rows="8" placeholder="BF Codes"></textarea>
+      </div>
+      
+    </div>
+    
+    <script>
+      /**
+       * BFコマンド
+       */
+      var bfMap = {
+        'ptrPlus'  : '>',
+        'ptrMinus' : '<',
+        'argPlus'  : '+',
+        'argMinus' : '-',
+        'print'    : '.',
+        'loop'     : '[',
+        'loopEnd'  : ']'
+      };
+      
+      /**
+       * ｴｯﾄ…コマンドｯｽ…
+       */
+      var commdisMap = {
+        'ptrPlus'  : 'ｱｱ…',
+        'ptrMinus' : 'ｱｱ､',
+        'argPlus'  : 'ｱ…',
+        'argMinus' : 'ｱ､',
+        'print'    : 'ｴｯﾄ…',
+        'loop'     : 'ｻｾﾝ…',
+        'loopEnd'  : 'ｯｽ…'
+      };
+      
+      /**
+       * textarea項目クリア
+       */
+      function inputClear() {
+        document.getElementById('str').value = '';
+        document.getElementById('ascii').value = '';
+        document.getElementById('bf_code').value = '';
+      };
+      
+      /**
+       * 文字列をBFコードに変換
+       */
+      function encodeLangBtn() {
+        while(document.getElementById('messageArea').firstChild)
+          document.getElementById('messageArea').removeChild(document.getElementById('messageArea').firstChild);
+        
+        document.getElementById('ascii').value = '';
+        document.getElementById('bf_code').value = '';
+        
+        var words = document.getElementById('str').value;        // 文字列
+        if(words.match(/^[\x20-\x7e\w\s]*$/)) {
+          var asciiCode = encodeAscii(words); // ASCIIコード
+          var bfCode = encodeLang(asciiCode);   // BFコード（簡易）
+          
+          document.getElementById('ascii').value = asciiCode;
+          document.getElementById('bf_code').value = bfCode;
+        } else {
+          // BF非対応文字列
+          var msg = document.createElement('span');
+          msg.textContent = 'BFコード変換非対応文字列が含まれています';
+          msg.style.cssText = 'color: red;';
+          
+          document.getElementById('messageArea').appendChild(msg);
+        }
+      };
+      
+      /**
+       * 文字列を10進数ASCIIコードに変換する
+       */
+      function encodeAscii(str) {
+        if(str == null || str.length <= 0)
+          return '';
+        
+        var asciiCode = '';         // 10進数ASCIIコード値
+        var cArgs = str.split('');  // 文字列
+        
+        if(cArgs.length > 0) {
+          asciiCode += cArgs[0].charCodeAt(0);
+          for(var i = 1; i < cArgs.length; i++) {
+            asciiCode += ' ' + cArgs[i].charCodeAt(0);
+          }
+        }
+        
+        return asciiCode;
+      };
+      
+      /**
+       * 10進数ASCIIコードを簡易BF系コードに変換する
+       */
+      function encodeLang(asciiCode) {
+        if(asciiCode == null || asciiCode.length <= 0)
+          return '';
+        
+        // 変換用言語Map langMap を設定
+        var langMap = null;
+        for(var i = 0; i < document.getElementsByName('lang').length; i++) {
+          var lang = document.getElementsByName('lang')[i];
+          
+          if(lang.checked) {
+            
+            if(lang.value == 'commdic') {
+              // コミュ障言語に変換
+              langMap = commdisMap;
+            } else {
+              // BF言語に変換
+              langMap = bfMap;
+            }
+            
+            break;
+          }
+        }
+        if(!langMap) { langMap = bfMap; }   // 言語Map未設定の場合BF言語を指定
+        
+        var bfCode = '';
+        var ptr = 0;
+        
+        // 1コードずつBF言語に変換する
+        var asciiArgs = asciiCode.split(' ');
+        for(var i = 0; i < asciiArgs.length; i++) {
+          if(ptr < asciiArgs[i]) {
+            // +コマンド
+            for(ptr; ptr < asciiArgs[i]; ptr++)
+              bfCode += bfMap.argPlus;
+          } else if(ptr > asciiArgs[i]) {
+            // -コマンド
+            for(ptr; ptr > asciiArgs[i]; ptr--)
+              bfCode += bfMap.argMinus;
+          }
+          
+          bfCode += bfMap.print;
+        }
+        
+        // 構文最適化
+        var bfCodes = bfCode.split(bfMap.print);
+        bfCode = bfMap.ptrPlus;
+        for(var i = 0; i < bfCodes.length - 1; i++) {
+          var cnt = bfCodes[i].length;
+          var command = bfCodes[i].split('')[0];
+          
+          if(cnt > 10) {
+            // for文を使用する
+            var n = Math.floor(cnt / 10);
+            var a = 0;
+            var adjustCmd = command;
+            
+            if(n < 2) {
+              // 増減値が20以下の場合、5 * n + a の式を使用
+              a = cnt % 5;
+              n = Math.floor(cnt / 5);
+              if(a > 2) {
+                if(command == bfMap.argPlus){ adjustCmd = bfMap.argMinus; }
+                else{ adjustCmd = bfMap.argPlus; }
+                
+                n = n + 1;
+                a = 5 - a;
+              }
+              
+              bfCode += bfMap.ptrMinus;
+              for(var j = 0; j < n; j++) {
+                bfCode += bfMap.argPlus;
+              }
+              
+              bfCode += bfMap.loop + bfMap.ptrPlus;
+              for(var j = 0; j < 5; j++) {
+                bfCode += command;
+              }
+              
+              bfCode += bfMap.ptrMinus + bfMap.argMinus + bfMap.loopEnd + bfMap.ptrPlus;
+              for(var j = 0; j < a; j++) {
+                bfCode += adjustCmd;
+              }
+            } else {
+              // 10 * n + a の式を使用
+              a = cnt % 10;
+              if(a > 2) {
+                if(command == bfMap.argPlus){ adjustCmd = bfMap.argMinus; }
+                else{ adjustCmd = bfMap.argPlus; }
+                
+                n = n + 1;
+                a = 10 - a;
+              }
+              
+              bfCode += bfMap.ptrMinus;
+              for(var j = 0; j < n; j++) {
+                bfCode += bfMap.argPlus;
+              }
+              
+              bfCode += bfMap.loop + bfMap.ptrPlus;
+              for(var j = 0; j < 10; j++) {
+                bfCode += command;
+              }
+              
+              bfCode += bfMap.ptrMinus + bfMap.argMinus + bfMap.loopEnd + bfMap.ptrPlus;
+              for(var j = 0; j < a; j++) {
+                bfCode += adjustCmd;
+              }
+            }
+          } else {
+            // 省略コードを使用しない
+            bfCode += bfCodes[i];
+          }
+          
+          bfCode += bfMap.print;
+        }
+        
+        // BF言語を50文字区切りで改行する
+        bfCodes = bfCode.split('');
+        bfCode = '';
+        for(var i = 0; i < bfCodes.length; i++) {
+          bfCode += bfCodes[i];
+          if((i + 1) % 50 == 0) {
+            bfCode += '\n';
+          }
+        }
+        
+        // BF言語を指定したコマンドに変換する
+        bfCode = bfCode.replace(new RegExp(bfMap.ptrPlus.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.ptrPlus);
+        bfCode = bfCode.replace(new RegExp(bfMap.ptrMinus.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.ptrMinus);
+        bfCode = bfCode.replace(new RegExp(bfMap.argPlus.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.argPlus);
+        bfCode = bfCode.replace(new RegExp(bfMap.argMinus.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.argMinus);
+        bfCode = bfCode.replace(new RegExp(bfMap.print.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.print);
+        bfCode = bfCode.replace(new RegExp(bfMap.loop.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.loop);
+        bfCode = bfCode.replace(new RegExp(bfMap.loopEnd.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), "g"), langMap.loopEnd);
+        
+        return bfCode;
+      };
+      
+    </script>
+  </body>
+</html>
